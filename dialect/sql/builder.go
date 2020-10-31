@@ -915,6 +915,19 @@ func (p *Predicate) REGEXP(col string, arg interface{}) *Predicate {
 	})
 }
 
+
+func NOTREGEXP(col string, value interface{}) *Predicate {
+	return P().NOTREGEXP(col, value)
+}
+
+func (p *Predicate) NOTREGEXP(col string, arg interface{}) *Predicate {
+	return p.Append(func(b *Builder) {
+		b.Ident(col)
+		b.WriteOp(RegExpNot)
+		b.Arg(arg)
+	})
+}
+
 // NEQ returns a "<>" predicate.
 func NEQ(col string, value interface{}) *Predicate {
 	return P().NEQ(col, value)
@@ -2036,6 +2049,7 @@ const (
 	OpIsNull            // IS NULL
 	OpNotNull           // IS NOT NULL
 	RegExp              // Regexp
+	RegExpNot           // Not Regexp
 )
 
 var ops = [...]string{
@@ -2051,15 +2065,18 @@ var ops = [...]string{
 	OpIsNull:  "IS NULL",
 	OpNotNull: "IS NOT NULL",
 	RegExp:    "REGEXP",
+	RegExpNot: "NOT REGEXP",
 }
 
 // WriteOp writes an operator to the builder.
 func (b *Builder) WriteOp(op Op) *Builder {
 	switch {
-	case op >= OpEQ && op <= OpLike || op == RegExp:
+	case op >= OpEQ && op <= OpLike:
 		b.Pad().WriteString(ops[op]).Pad()
 	case op == OpIsNull || op == OpNotNull:
 		b.Pad().WriteString(ops[op])
+	case op >= RegExp && op <= RegExpNot:
+		b.Pad().WriteString(ops[op]).Pad()
 	default:
 		panic(fmt.Sprintf("invalid op %d", op))
 	}
