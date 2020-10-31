@@ -433,7 +433,7 @@ func TestBuilder(t *testing.T) {
 		{
 			input: Select().
 				From(Table("users")).
-				Where(EQ("name", "Alex")),
+				Where(REGEXP("name", "Alex")),
 			wantQuery: "SELECT * FROM `users` WHERE `name` = ?",
 			wantArgs:  []interface{}{"Alex"},
 		},

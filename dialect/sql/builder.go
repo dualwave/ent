@@ -903,6 +903,18 @@ func (p *Predicate) EQ(col string, arg interface{}) *Predicate {
 	})
 }
 
+func REGEXP(col string, value interface{}) *Predicate {
+	return P().REGEXP(col, value)
+}
+
+func (p *Predicate) REGEXP(col string, arg interface{}) *Predicate {
+	return p.Append(func(b *Builder) {
+		b.Ident(col)
+		b.WriteOp(RegExp)
+		b.Arg(arg)
+	})
+}
+
 // NEQ returns a "<>" predicate.
 func NEQ(col string, value interface{}) *Predicate {
 	return P().NEQ(col, value)
@@ -1447,19 +1459,21 @@ func (j join) clone() join {
 // Selector is a builder for the `SELECT` statement.
 type Selector struct {
 	Builder
-	as       string
-	columns  []string
-	from     TableView
-	joins    []join
-	where    *Predicate
-	or       bool
-	not      bool
-	order    []string
-	group    []string
-	having   *Predicate
-	limit    *int
-	offset   *int
-	distinct bool
+	as        string
+	columns   []string
+	from      TableView
+	joins     []join
+	where     *Predicate
+	or        bool
+	not       bool
+	order     []string
+	group     []string
+	having    *Predicate
+	limit     *int
+	offset    *int
+	distinct  bool
+	regexp    string
+	notregexp string
 }
 
 // Select returns a new selector for the `SELECT` statement.
@@ -1783,6 +1797,16 @@ func (s *Selector) Query() (string, []interface{}) {
 		b.WriteString(" HAVING ")
 		b.Join(s.having)
 	}
+	if s.regexp != "" {
+		b.WriteString(" REGEXP ")
+		b.WriteString(s.regexp)
+	}
+
+	if s.notregexp != "" {
+		b.WriteString(" NOT REGEXP ")
+		b.WriteString(s.regexp)
+	}
+
 	if len(s.order) > 0 {
 		b.WriteString(" ORDER BY ")
 		b.IdentComma(s.order...)
@@ -2011,6 +2035,7 @@ const (
 	OpLike              // LIKE
 	OpIsNull            // IS NULL
 	OpNotNull           // IS NOT NULL
+	RegExp              // Regexp
 )
 
 var ops = [...]string{
@@ -2025,12 +2050,13 @@ var ops = [...]string{
 	OpLike:    "LIKE",
 	OpIsNull:  "IS NULL",
 	OpNotNull: "IS NOT NULL",
+	RegExp:    "REGEXP",
 }
 
 // WriteOp writes an operator to the builder.
 func (b *Builder) WriteOp(op Op) *Builder {
 	switch {
-	case op >= OpEQ && op <= OpLike:
+	case op >= OpEQ && op <= OpLike || op == RegExp:
 		b.Pad().WriteString(ops[op]).Pad()
 	case op == OpIsNull || op == OpNotNull:
 		b.Pad().WriteString(ops[op])

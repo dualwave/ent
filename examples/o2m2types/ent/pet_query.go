@@ -60,6 +60,7 @@ func (pq *PetQuery) Order(o ...OrderFunc) *PetQuery {
 	return pq
 }
 
+
 // QueryOwner chains the current query on the owner edge.
 func (pq *PetQuery) QueryOwner() *UserQuery {
 	query := &UserQuery{config: pq.config}
